@@ -2,6 +2,8 @@
 
 A C++ program that renders different 3D objects (Cube, Sphere, Pyramid) with ASCII/text-based rendering.
 
+**[Try the live WebAssembly demo!](https://jacob-nellis-code.github.io/refactored-pancake/)**
+
 ## Features
 
 - **3D Geometry Classes**: Vector3D and Matrix4x4 for 3D transformations
@@ -70,11 +72,24 @@ cd build
 ctest --verbose
 ```
 
+## Web Version
+
+A WebAssembly version of this renderer is available that runs directly in your browser! The C++ code is compiled to WebAssembly using Emscripten and automatically deployed to GitHub Pages.
+
+**[Launch Web Demo](https://jacob-nellis-code.github.io/refactored-pancake/)**
+
+For local development of the web version, see the [web/README.md](web/README.md) for build instructions.
+
 ## CI/CD
 
-This project uses GitHub Actions for continuous integration. On every push and pull request:
+This project uses GitHub Actions for continuous integration and deployment:
+
+**Native Build (`.github/workflows/ci.yml`):**
 - The code is automatically built
 - All unit tests are executed
 - The 3D renderer demo is run
 
-See `.github/workflows/ci.yml` for the CI configuration.
+**WebAssembly Build (`.github/workflows/deploy-web.yml`):**
+- Compiles C++ to WebAssembly using Emscripten
+- Deploys to GitHub Pages (main branch only)
+- Live demo available at the link above
