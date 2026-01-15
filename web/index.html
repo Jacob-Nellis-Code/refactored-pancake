@@ -204,19 +204,26 @@
         };
 
         function runRenderer() {
+            // Clear previous output
             consoleOutput = '';
             outputDiv.textContent = 'Running renderer...\n';
 
-            // The main function will be called automatically by Emscripten
-            // We need to re-run it by reloading the module or calling it again
-            if (Module._main) {
-                try {
-                    Module._main();
-                } catch (e) {
-                    console.error('Error running main:', e);
-                    statusDiv.textContent = 'Error running renderer';
+            // Call the main function
+            try {
+                // Call main with argc=0, argv=null
+                if (typeof Module.callMain === 'function') {
+                    Module.callMain([]);
+                } else if (typeof Module._main === 'function') {
+                    Module._main(0, 0);
+                } else {
+                    console.error('Main function not found');
+                    statusDiv.textContent = 'Error: Main function not available';
                     statusDiv.className = 'error';
                 }
+            } catch (e) {
+                console.error('Error running main:', e);
+                statusDiv.textContent = 'Error running renderer: ' + e.message;
+                statusDiv.className = 'error';
             }
         }
 

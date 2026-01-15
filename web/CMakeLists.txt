@@ -25,11 +25,11 @@ if(EMSCRIPTEN)
         LINK_FLAGS "\
             -s WASM=1 \
             -s ALLOW_MEMORY_GROWTH=1 \
-            -s NO_EXIT_RUNTIME=0 \
+            -s NO_EXIT_RUNTIME=1 \
             -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap'] \
             -s EXPORTED_FUNCTIONS=['_main'] \
             -s MODULARIZE=0 \
-            -s INVOKE_RUN=1 \
+            -s INVOKE_RUN=0 \
             -s INITIAL_MEMORY=16777216"
     )
 
