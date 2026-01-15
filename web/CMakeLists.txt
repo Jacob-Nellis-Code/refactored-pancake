@@ -26,7 +26,7 @@ if(EMSCRIPTEN)
             -s WASM=1 \
             -s ALLOW_MEMORY_GROWTH=1 \
             -s NO_EXIT_RUNTIME=1 \
-            -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap'] \
+            -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','callMain'] \
             -s EXPORTED_FUNCTIONS=['_main'] \
             -s MODULARIZE=0 \
             -s INVOKE_RUN=0 \
