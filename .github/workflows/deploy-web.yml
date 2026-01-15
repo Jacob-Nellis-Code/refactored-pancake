@@ -49,8 +49,20 @@ jobs:
       run: |
         mkdir -p deploy
         cp web/index.html deploy/
-        cp web/build/renderer.js deploy/
-        cp web/build/renderer.wasm deploy/
+        # Check where the files actually are
+        echo "Contents of web/:"
+        ls -la web/
+        echo "Contents of web/build/:"
+        ls -la web/build/ || echo "web/build/ doesn't have the files"
+        # Copy from the correct location
+        if [ -f web/renderer.js ]; then
+          cp web/renderer.js deploy/
+          cp web/renderer.wasm deploy/
+        else
+          cp web/build/renderer.js deploy/
+          cp web/build/renderer.wasm deploy/
+        fi
+        echo "Deploy directory:"
         ls -la deploy/
 
     - name: Upload artifact
