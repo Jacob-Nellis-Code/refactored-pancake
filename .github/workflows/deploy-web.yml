@@ -29,7 +29,7 @@ jobs:
       uses: mymindstorm/setup-emsdk@v13
       with:
         version: '3.1.51'
-        actions-cache-folder: 'emsdk-cache'
+        no-cache: true
 
     - name: Verify Emscripten installation
       run: |
