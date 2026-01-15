@@ -74,6 +74,7 @@
             gap: 10px;
             flex-wrap: wrap;
             justify-content: center;
+            align-items: center;
         }
 
         button {
@@ -97,6 +98,27 @@
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        button.active {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #00ff00;
+            background: #2a2a2a;
+            padding: 10px 15px;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+        }
+
+        .speed-control input[type="range"] {
+            width: 150px;
+            cursor: pointer;
         }
 
         .info {
@@ -134,13 +156,18 @@
 </head>
 <body>
     <h1>3D Object Renderer</h1>
-    <p class="subtitle">C++ ASCII Renderer compiled to WebAssembly</p>
+    <p class="subtitle">C++ ASCII Renderer compiled to WebAssembly with Real-Time Animation</p>
 
     <div id="status" class="loading">Loading WebAssembly module...</div>
 
     <div class="controls" id="controls" style="display: none;">
-        <button onclick="runRenderer()">Run Renderer</button>
+        <button id="toggleBtn" onclick="toggleAnimation()">Start Animation</button>
         <button onclick="clearOutput()">Clear Output</button>
+        <div class="speed-control">
+            <label for="speedSlider">Speed:</label>
+            <input type="range" id="speedSlider" min="1" max="10" value="3" step="1">
+            <span id="speedValue">3x</span>
+        </div>
     </div>
 
     <div id="output"></div>
@@ -152,9 +179,11 @@
             <li>3D geometry classes (Vector3D, Matrix4x4)</li>
             <li>3D object rendering (Cube, Sphere, Pyramid)</li>
             <li>ASCII-based wireframe rendering</li>
+            <li><strong>Real-time rotation animation</strong> showing objects spinning in 3D space</li>
             <li>3D transformations (rotation, scaling, translation)</li>
             <li>Depth buffering for correct occlusion</li>
         </ul>
+        <p><strong>Controls:</strong> Use "Start Animation" to see the objects rotate continuously. Adjust the speed slider to change rotation speed.</p>
         <p>Source code: <a href="https://github.com/Jacob-Nellis-Code/refactored-pancake" target="_blank">GitHub Repository</a></p>
     </div>
 
@@ -162,6 +191,15 @@
         let outputDiv = document.getElementById('output');
         let statusDiv = document.getElementById('status');
         let controlsDiv = document.getElementById('controls');
+        let toggleBtn = document.getElementById('toggleBtn');
+        let speedSlider = document.getElementById('speedSlider');
+        let speedValue = document.getElementById('speedValue');
+
+        // Animation state
+        let isAnimating = false;
+        let animationId = null;
+        let currentAngle = 0;
+        let rotationSpeed = 0.03; // radians per frame (matches speed slider value of 3)
 
         // Capture console output from C++
         let consoleOutput = '';
@@ -173,8 +211,8 @@
                 statusDiv.className = 'ready';
                 controlsDiv.style.display = 'flex';
 
-                // Auto-run the renderer on load
-                setTimeout(runRenderer, 100);
+                // Render initial frame
+                setTimeout(() => renderSingleFrame(0), 100);
             }],
             print: function(text) {
                 if (arguments.length > 1) {
@@ -203,33 +241,59 @@
             }
         };
 
-        function runRenderer() {
-            // Clear previous output
-            consoleOutput = '';
-            outputDiv.textContent = 'Running renderer...\n';
+        // Speed slider handler
+        speedSlider.addEventListener('input', function() {
+            const speed = parseInt(this.value);
+            speedValue.textContent = speed + 'x';
+            rotationSpeed = 0.01 * speed;
+        });
 
-            // Call the main function
+        function renderSingleFrame(angle) {
+            consoleOutput = '';
             try {
-                // Call main with argc=0, argv=null
-                if (typeof Module.callMain === 'function') {
-                    Module.callMain([]);
-                } else if (typeof Module._main === 'function') {
-                    Module._main(0, 0);
+                if (typeof Module._renderFrame === 'function') {
+                    Module._renderFrame(angle);
                 } else {
-                    console.error('Main function not found');
-                    statusDiv.textContent = 'Error: Main function not available';
-                    statusDiv.className = 'error';
+                    console.error('renderFrame function not found');
                 }
             } catch (e) {
-                console.error('Error running main:', e);
-                statusDiv.textContent = 'Error running renderer: ' + e.message;
-                statusDiv.className = 'error';
+                console.error('Error rendering frame:', e);
+            }
+        }
+
+        function animateFrame() {
+            if (!isAnimating) return;
+
+            currentAngle += rotationSpeed;
+            if (currentAngle > 2 * Math.PI) {
+                currentAngle -= 2 * Math.PI;
+            }
+
+            renderSingleFrame(currentAngle);
+            animationId = requestAnimationFrame(animateFrame);
+        }
+
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+            
+            if (isAnimating) {
+                toggleBtn.textContent = 'Stop Animation';
+                toggleBtn.classList.add('active');
+                animateFrame();
+            } else {
+                toggleBtn.textContent = 'Start Animation';
+                toggleBtn.classList.remove('active');
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
             }
         }
 
         function clearOutput() {
             consoleOutput = '';
             outputDiv.textContent = '';
+            currentAngle = 0;
         }
 
         window.onerror = function(event) {

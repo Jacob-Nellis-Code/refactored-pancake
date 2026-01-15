@@ -27,7 +27,7 @@ if(EMSCRIPTEN)
             -s ALLOW_MEMORY_GROWTH=1 \
             -s NO_EXIT_RUNTIME=1 \
             -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','callMain'] \
-            -s EXPORTED_FUNCTIONS=['_main'] \
+            -s EXPORTED_FUNCTIONS=['_main','_renderFrame'] \
             -s MODULARIZE=0 \
             -s INVOKE_RUN=0 \
             -s INITIAL_MEMORY=16777216"
