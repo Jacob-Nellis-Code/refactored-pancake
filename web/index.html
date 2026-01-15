@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Object Renderer - WebAssembly</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #00ff00;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .subtitle {
+            color: #00cc00;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1em;
+        }
+
+        #output {
+            background: #000;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            padding: 20px;
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.2;
+            font-size: 14px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            max-width: 95%;
+        }
+
+        #status {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: #2a2a2a;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            color: #00ff00;
+            text-align: center;
+        }
+
+        .loading {
+            color: #ffff00;
+        }
+
+        .ready {
+            color: #00ff00;
+        }
+
+        .error {
+            color: #ff0000;
+            border-color: #ff0000;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            background: #003300;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .info {
+            background: #2a2a2a;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            max-width: 800px;
+        }
+
+        .info h3 {
+            margin-top: 0;
+            color: #00ff00;
+        }
+
+        .info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .info li {
+            margin: 5px 0;
+        }
+
+        a {
+            color: #00ccff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>3D Object Renderer</h1>
+    <p class="subtitle">C++ ASCII Renderer compiled to WebAssembly</p>
+
+    <div id="status" class="loading">Loading WebAssembly module...</div>
+
+    <div class="controls" id="controls" style="display: none;">
+        <button onclick="runRenderer()">Run Renderer</button>
+        <button onclick="clearOutput()">Clear Output</button>
+    </div>
+
+    <div id="output"></div>
+
+    <div class="info">
+        <h3>About This Demo</h3>
+        <p>This is a 3D ASCII renderer written in C++ and compiled to WebAssembly using Emscripten. It demonstrates:</p>
+        <ul>
+            <li>3D geometry classes (Vector3D, Matrix4x4)</li>
+            <li>3D object rendering (Cube, Sphere, Pyramid)</li>
+            <li>ASCII-based wireframe rendering</li>
+            <li>3D transformations (rotation, scaling, translation)</li>
+            <li>Depth buffering for correct occlusion</li>
+        </ul>
+        <p>Source code: <a href="https://github.com/Jacob-Nellis-Code/refactored-pancake" target="_blank">GitHub Repository</a></p>
+    </div>
+
+    <script>
+        let outputDiv = document.getElementById('output');
+        let statusDiv = document.getElementById('status');
+        let controlsDiv = document.getElementById('controls');
+
+        // Capture console output from C++
+        let consoleOutput = '';
+
+        var Module = {
+            preRun: [],
+            postRun: [function() {
+                statusDiv.textContent = 'WebAssembly module loaded successfully!';
+                statusDiv.className = 'ready';
+                controlsDiv.style.display = 'flex';
+
+                // Auto-run the renderer on load
+                setTimeout(runRenderer, 100);
+            }],
+            print: function(text) {
+                if (arguments.length > 1) {
+                    text = Array.prototype.slice.call(arguments).join(' ');
+                }
+                consoleOutput += text + '\n';
+                outputDiv.textContent = consoleOutput;
+            },
+            printErr: function(text) {
+                if (arguments.length > 1) {
+                    text = Array.prototype.slice.call(arguments).join(' ');
+                }
+                console.error(text);
+            },
+            setStatus: function(text) {
+                if (text) {
+                    statusDiv.textContent = text;
+                }
+            },
+            onAbort: function(what) {
+                statusDiv.textContent = 'Error: ' + what;
+                statusDiv.className = 'error';
+            },
+            onRuntimeInitialized: function() {
+                console.log('Runtime initialized');
+            }
+        };
+
+        function runRenderer() {
+            consoleOutput = '';
+            outputDiv.textContent = 'Running renderer...\n';
+
+            // The main function will be called automatically by Emscripten
+            // We need to re-run it by reloading the module or calling it again
+            if (Module._main) {
+                try {
+                    Module._main();
+                } catch (e) {
+                    console.error('Error running main:', e);
+                    statusDiv.textContent = 'Error running renderer';
+                    statusDiv.className = 'error';
+                }
+            }
+        }
+
+        function clearOutput() {
+            consoleOutput = '';
+            outputDiv.textContent = '';
+        }
+
+        window.onerror = function(event) {
+            statusDiv.textContent = 'Error loading module';
+            statusDiv.className = 'error';
+        };
+    </script>
+
+    <!-- The Emscripten-generated JavaScript will be loaded here -->
+    <script async src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+name: Build and Deploy WebAssembly
+
+on:
+  push:
+    branches: [ main, claude/** ]
+  pull_request:
+    branches: [ main ]
+
+# Sets permissions for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup Emscripten
+      uses: mymindstorm/setup-emsdk@v13
+      with:
+        version: '3.1.51'
+        no-cache: true
+
+    - name: Verify Emscripten installation
+      run: |
+        emcc --version
+        em++ --version
+
+    - name: Build WebAssembly
+      run: |
+        cd web
+        mkdir -p build
+        cd build
+        emcmake cmake ..
+        emmake make
+        ls -la
+
+    - name: Prepare deployment files
+      run: |
+        mkdir -p deploy
+        cp web/index.html deploy/
+        # Check where the files actually are
+        echo "Contents of web/:"
+        ls -la web/
+        echo "Contents of web/build/:"
+        ls -la web/build/ || echo "web/build/ doesn't have the files"
+        # Copy from the correct location
+        if [ -f web/renderer.js ]; then
+          cp web/renderer.js deploy/
+          cp web/renderer.wasm deploy/
+        else
+          cp web/build/renderer.js deploy/
+          cp web/build/renderer.wasm deploy/
+        fi
+        echo "Deploy directory:"
+        ls -la deploy/
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./deploy
+
+  deploy:
+    # Only deploy on main branch
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
